@@ -1,0 +1,58 @@
+version: 2.1
+
+jobs:
+  test:
+    working_directory: ~/app
+    docker:
+      - image: circleci/node:8
+    steps:
+      - checkout
+      - restore_cache:
+        key: dependency-cache-app{{ checksum "package.json" }}
+      - restore_cache:
+        key: dependency-cache-npm{{ checksum "package.json" }}
+      - restore_cache:
+        key: dependency-cache-cache{{ checksum "package.json" }}
+      - run:
+        name: test
+        command: npm run test      
+      - save_cache:
+        key: dependency-cache-app{{ checksum "package.json" }}
+        paths:
+          - ~/app
+      - save_cache:
+        key: dependency-cache-npm{{ checksum "package.json" }}
+        paths:
+          - ~/.npm
+      - save_cache:
+        key: dependency-cache-cache{{ checksum "package.json" }}
+        paths:
+          - ~/.cache
+  update_codeowners:
+    working_directory: ~/app
+    docker:
+      - image: circleci/node:8
+    steps:
+      - checkout
+      - run:
+	      name: test
+		  command: npm run test            
+      - run:
+          name: update codeowners
+		  command: npm run update-codeowners
+        
+workflows:
+  version: 2
+  test:
+  jobs:   
+    - test
+  nightly:
+  triggers:
+    - schedule:
+        cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+  jobs:
+    - update_codeowners
